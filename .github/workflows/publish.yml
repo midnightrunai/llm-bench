@@ -6,9 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run (publish to TestPyPI instead)'
+        description: 'Dry run (skip actual upload)'
         required: false
         default: 'false'
+        type: boolean
 
 jobs:
   test:
@@ -18,37 +19,34 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install and test
         run: |
           pip install -e ".[dev]"
-      - name: Run tests
-        run: pytest tests/ -v
+          pytest tests/ -v --tb=short
 
   publish:
     needs: test
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write  # for trusted publishing
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install build tools
-        run: pip install build hatchling
-      - name: Build package
+        run: pip install build twine hatchling
+      - name: Build
         run: python -m build
-      - name: Publish to PyPI (Trusted Publishing)
-        if: github.event_name == 'release' || github.event.inputs.dry_run == 'false'
-        uses: pypa/gh-action-pypi-publish@release/v1
-      - name: Publish to TestPyPI
-        if: github.event.inputs.dry_run == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+      - name: Publish to PyPI
+        if: ${{ !inputs.dry_run }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/*
+      - name: Dry run info
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run mode - would publish:"
+          ls dist/
