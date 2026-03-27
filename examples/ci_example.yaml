@@ -1,0 +1,26 @@
+# llm-bench CI/CD example
+# Use this to run in your CI pipeline and fail on regression
+#
+# GitHub Actions example:
+#   - name: Run LLM benchmark
+#     run: |
+#       llm-bench run --config examples/ci_example.yaml --json > benchmark_results.json
+#       python scripts/check_regression.py benchmark_results.json
+#
+# The --json flag outputs machine-readable results for programmatic analysis.
+
+models:
+  - gpt-4o-mini
+  - claude-3-5-haiku
+
+prompts:
+  - text: "Return only the JSON: {\"status\": \"ok\"}"
+    name: json_compliance
+
+  - text: "What is 15 * 7? Answer with just the number."
+    name: math_simple
+
+n_runs: 3
+temperature: 0.0
+max_tokens: 50
+timeout_seconds: 30

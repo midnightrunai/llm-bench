@@ -1,0 +1,24 @@
+# llm-bench basic example
+# Run with: llm-bench run --config examples/basic_benchmark.yaml
+#
+# Required env vars:
+#   OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY
+
+models:
+  - gpt-4o-mini
+  - claude-3-5-haiku
+  - gemini-2.0-flash
+
+prompts:
+  - text: "What is the capital of France?"
+    name: factual_recall
+
+  - text: "Explain the difference between a mutex and a semaphore in one paragraph."
+    name: technical_explanation
+
+  - text: "Write a one-liner Python function to check if a number is prime."
+    name: code_generation
+
+n_runs: 3
+temperature: 0.0
+max_tokens: 512

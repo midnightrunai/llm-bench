@@ -1,0 +1,40 @@
+# llm-bench advanced example — with quality judging and JSON output
+# Run with: llm-bench run --config examples/advanced_benchmark.yaml
+#
+# Required env vars:
+#   OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY
+
+models:
+  - gpt-4o
+  - claude-3-5-sonnet
+  - gemini-2.0-flash
+  - llama-3.3-70b-versatile  # via Groq — ultra-fast
+
+# System prompt applied to all requests
+system: "You are a helpful assistant. Be concise and accurate."
+
+prompts:
+  - text: "Classify the sentiment as positive, negative, or neutral (one word only): 'The product arrived damaged and customer service was unhelpful.'"
+    name: sentiment_negative
+
+  - text: "Classify the sentiment as positive, negative, or neutral (one word only): 'Absolutely phenomenal experience, will definitely recommend!'"
+    name: sentiment_positive
+
+  - text: "Summarize in exactly 2 sentences: Photosynthesis is the process by which plants, algae, and some bacteria convert light energy into chemical energy stored as glucose."
+    name: summarization
+
+  - text: "Debug this Python code and explain what's wrong: def factorial(n): return n * factorial(n-1)"
+    name: debugging
+
+# Quality scoring — uses gpt-4o-mini to evaluate coherence + relevance
+judge_model: gpt-4o-mini
+
+# 5 runs per prompt for statistical reliability
+n_runs: 5
+temperature: 0.0
+max_tokens: 256
+max_concurrent: 10
+
+# Save results to JSON
+output: results/advanced_results.json
+output_format: both
