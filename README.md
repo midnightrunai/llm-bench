@@ -3,7 +3,7 @@
 **Benchmark any LLM against your actual prompts.** Compare OpenAI, Anthropic, Gemini, Mistral, Groq — latency, cost, quality, side by side.
 
 ```
-pip install llm-bench
+pip install llm-benchmarker
 ```
 
 ---
@@ -12,7 +12,7 @@ pip install llm-bench
 
 ```bash
 # Install with the providers you need
-pip install "llm-bench[openai,anthropic,gemini]"
+pip install "llm-benchmarker[openai,anthropic,gemini]"
 
 # Set your API keys
 export OPENAI_API_KEY=sk-...
@@ -42,17 +42,17 @@ llm-bench results — 3 runs × 1 prompt(s)
 
 ```bash
 # Core only
-pip install llm-bench
+pip install llm-benchmarker
 
 # With specific providers
-pip install "llm-bench[openai]"
-pip install "llm-bench[anthropic]"
-pip install "llm-bench[gemini]"
-pip install "llm-bench[mistral]"
-pip install "llm-bench[groq]"
+pip install "llm-benchmarker[openai]"
+pip install "llm-benchmarker[anthropic]"
+pip install "llm-benchmarker[gemini]"
+pip install "llm-benchmarker[mistral]"
+pip install "llm-benchmarker[groq]"
 
 # All providers
-pip install "llm-bench[all]"
+pip install "llm-benchmarker[all]"
 ```
 
 ---
