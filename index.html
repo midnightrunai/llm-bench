@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>llm-bench — Benchmark any LLM against your actual prompts</title>
+  <meta name="description" content="Open source CLI tool to benchmark OpenAI, Anthropic, Gemini, Mistral, and Groq side by side. Compare latency, cost, and quality with your real prompts.">
+  <meta property="og:title" content="llm-bench — LLM benchmarking CLI">
+  <meta property="og:description" content="pip install llm-bench. Compare any LLM on latency, cost, and quality using your actual prompts.">
+  <meta property="og:url" content="https://midnightrun.ai/llm-bench">
+  <link rel="canonical" href="https://midnightrun.ai/llm-bench">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --border: #222;
+      --text: #e8e8e8;
+      --dim: #666;
+      --accent: #f0f0f0;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --blue: #60a5fa;
+      --red: #f87171;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    .nav-brand span { color: var(--dim); }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--border);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--dim);
+      margin-bottom: 28px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--dim);
+    }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--dim);
+      max-width: 560px;
+      line-height: 1.65;
+      margin-bottom: 36px;
+    }
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .install-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .install-box .prompt { color: var(--dim); }
+    .install-box .cmd { color: var(--green); }
+    .btn-copy {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-family: var(--mono);
+      transition: all 0.15s;
+    }
+    .btn-copy:hover { border-color: #444; color: var(--text); }
+    .btn-copy.copied { color: var(--green); border-color: var(--green); }
+    .link-gh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: var(--mono);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      transition: all 0.15s;
+    }
+    .link-gh:hover { color: var(--text); border-color: #444; }
+
+    /* ── TERMINAL DEMO ── */
+    .demo-wrap {
+      margin: 48px 0;
+    }
+    .terminal {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .terminal-header {
+      background: #111;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #3a1a1a; }
+    .dot-y { background: #3a3a1a; }
+    .dot-g { background: #1a3a1a; }
+    .terminal-title {
+      margin-left: 8px;
+      font-size: 11px;
+      color: var(--dim);
+      font-family: var(--mono);
+    }
+    .terminal-body {
+      padding: 20px 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .t-prompt { color: var(--dim); }
+    .t-cmd { color: var(--text); }
+    .t-out { color: #888; }
+    .t-model { color: var(--blue); font-weight: 600; }
+    .t-fast { color: var(--green); }
+    .t-med { color: var(--yellow); }
+    .t-slow { color: #f97316; }
+    .t-dim { color: #444; }
+    .t-head { color: #555; }
+    .t-title { color: var(--text); }
+    .t-sep { color: #2a2a2a; }
+    .t-info { color: #555; }
+
+    /* ── FEATURES ── */
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-label {
+      font-size: 11px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--accent);
+      margin-bottom: 32px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .feature {
+      background: var(--bg);
+      padding: 24px;
+    }
+    .feature-icon {
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .feature-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .feature-desc {
+      font-size: 13px;
+      color: var(--dim);
+      line-height: 1.55;
+    }
+
+    /* ── PROVIDERS ── */
+    .provider-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .provider-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--dim);
+    }
+
+    /* ── CODE EXAMPLES ── */
+    .code-tabs {
+      margin-top: 24px;
+    }
+    .tab-list {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--dim);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 16px;
+      transition: all 0.15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    pre {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #ccc;
+    }
+    pre .c { color: #555; }  /* comments */
+    pre .k { color: var(--blue); }  /* keywords */
+    pre .s { color: #a3e635; }  /* strings */
+    pre .n { color: var(--yellow); }  /* names/vars */
+    pre .p { color: #888; }  /* punctuation */
+
+    /* ── OUTPUT SCHEMA ── */
+    .json-demo {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.8;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    .jk { color: #60a5fa; }
+    .jv { color: #4ade80; }
+    .js { color: #a3e635; }
+    .jn { color: #fbbf24; }
+    .jd { color: #555; }
+
+    /* ── INSTALL SECTION ── */
+    .install-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    @media (max-width: 560px) {
+      .install-grid { grid-template-columns: 1fr; }
+    }
+    .install-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .install-card .label {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .install-card code {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--green);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px 0 48px;
+    }
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-left {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--dim);
+    }
+    .footer-left a {
+      color: var(--dim);
+      text-decoration: none;
+    }
+    .footer-left a:hover { color: var(--text); }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .footer-links a {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── SCROLL ANIMATIONS ── */
+    @media (prefers-reduced-motion: no-preference) {
+      .fade-in {
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+      }
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/llm-bench" class="nav-brand">llm<span>-</span>bench</a>
+    <ul class="nav-links">
+      <li><a href="https://github.com/midnightrunai/llm-bench" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/llm-bench/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="https://midnightrun.ai" target="_blank" rel="noopener">midnightrun.ai</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+  <div class="container">
+    <section class="hero" style="border-bottom:none;padding-bottom:0;">
+      <div class="badge">open source · MIT · v0.1.0</div>
+      <h1>Benchmark any LLM<br><em>against your actual prompts</em></h1>
+      <p class="hero-sub">
+        Stop guessing. Run gpt-4o, claude-3-5-sonnet, gemini-2.0-flash, and more against
+        your real use cases. Get p50/p95 latency, cost per 1k requests, and optional
+        quality scores — in one command.
+      </p>
+      <div class="hero-cta">
+        <div class="install-box">
+          <span class="prompt">$</span>
+          <span class="cmd" id="install-cmd">pip install llm-bench</span>
+          <button class="btn-copy" onclick="copyInstall(this)" title="Copy">copy</button>
+        </div>
+        <a href="https://github.com/midnightrunai/llm-bench" target="_blank" rel="noopener" class="link-gh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- TERMINAL DEMO -->
+    <div class="demo-wrap fade-in">
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="terminal-title">llm-bench run --prompt "Classify sentiment: I love this!" --models gpt-4o,claude-3-5-sonnet,gemini-2.0-flash</span>
+        </div>
+        <div class="terminal-body">
+<pre style="background:transparent;border:none;padding:0;border-radius:0;"><span class="t-dim">Running benchmark: 3 models × 1 prompt × 3 runs</span>
+
+<span class="t-title">llm-bench results</span> <span class="t-dim">— 3 runs × 1 prompt(s)</span>
+
+<span class="t-head">  Model                      Provider    p50 (ms)  p95 (ms)  Avg tokens ↑↓   $/1k req   Errors</span>
+<span class="t-sep">  ─────────────────────────────────────────────────────────────────────────────────────────────</span>
+  <span class="t-model">gemini-2.0-flash</span>           <span class="t-out">gemini</span>        <span class="t-fast">289</span>       <span class="t-fast">412</span>      14↑  16↓        <span class="t-fast">$0.002</span>      —
+  <span class="t-model">gpt-4o</span>                     <span class="t-out">openai</span>        <span class="t-med">498</span>       <span class="t-med">631</span>      14↑  19↓        $0.058      —
+  <span class="t-model">claude-3-5-sonnet</span>          <span class="t-out">anthropic</span>     <span class="t-slow">903</span>      <span class="t-slow">1187</span>      14↑  28↓        $0.119      —
+
+<span class="t-info">Total time: 8.3s | Requests: 9</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="fade-in">
+    <div class="container">
+      <p class="section-label">What it measures</p>
+      <h2>Everything you need to pick the right model</h2>
+      <div class="features-grid">
+        <div class="feature">
+          <span class="feature-icon">⚡</span>
+          <div class="feature-title">Latency (p50 / p95)</div>
+          <div class="feature-desc">Real wall-clock time, not marketing numbers. See the 95th percentile tail latency that your users actually experience.</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">💰</span>
+          <div class="feature-title">Cost per 1k requests</div>
+          <div class="feature-desc">Calculated from actual token usage and current pricing. Know your bill before you commit to a model.</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔢</span>
+          <div class="feature-title">Token counts</div>
+          <div class="feature-desc">Average input and output tokens. Understand why some models cost more — and optimize your prompts.</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🧑‍⚖️</span>
+          <div class="feature-title">Quality scoring</div>
+          <div class="feature-desc">Optional LLM-as-judge mode. Scores coherence and relevance 1-10 using any judge model you choose.</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">📋</span>
+          <div class="feature-title">YAML config</div>
+          <div class="feature-desc">Define prompts, models, and settings in a reusable YAML file. Run <code style="font-family:var(--mono);font-size:12px">llm-bench init</code> to get started.</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔧</span>
+          <div class="feature-title">JSON output</div>
+          <div class="feature-desc">Machine-readable output for CI/CD pipelines. Detect regressions, compare model versions, automate decisions.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVIDERS -->
+  <section class="fade-in">
+    <div class="container">
+      <p class="section-label">Providers</p>
+      <h2>5 providers, 30+ models</h2>
+      <p style="color:var(--dim);font-size:14px;max-width:560px;">Set the relevant API key env var and any model from that provider just works. No config changes needed.</p>
+
+      <div class="provider-list">
+        <div class="provider-chip">OpenAI — gpt-4o, gpt-4o-mini, o3-mini</div>
+        <div class="provider-chip">Anthropic — claude-opus-4, claude-sonnet-4, claude-3-5</div>
+        <div class="provider-chip">Gemini — gemini-2.5-pro, gemini-2.0-flash</div>
+        <div class="provider-chip">Mistral — mistral-large, codestral, mixtral</div>
+        <div class="provider-chip">Groq — llama-3.3-70b, gemma2-9b (ultra-fast)</div>
+      </div>
+
+      <div style="margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;">
+        <div style="font-size:11px;font-family:var(--mono);color:var(--dim);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em">API Keys (env vars)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;font-family:var(--mono);font-size:12px;color:#888;">
+          <span>OPENAI_API_KEY</span>
+          <span>ANTHROPIC_API_KEY</span>
+          <span>GEMINI_API_KEY</span>
+          <span>MISTRAL_API_KEY</span>
+          <span>GROQ_API_KEY</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CODE EXAMPLES -->
+  <section class="fade-in">
+    <div class="container">
+      <p class="section-label">Usage</p>
+      <h2>Three ways to run</h2>
+      <div class="code-tabs">
+        <div class="tab-list" role="tablist">
+          <button class="tab-btn active" onclick="switchTab(this,'tab-cli')" role="tab">CLI</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-yaml')" role="tab">YAML config</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-python')" role="tab">Python API</button>
+        </div>
+        <div id="tab-cli" class="tab-panel active">
+<pre><span class="c"># Quick single-prompt benchmark</span>
+$ llm-bench run \
+    --prompt <span class="s">"Write a regex to match email addresses"</span> \
+    --models gpt-4o,claude-3-5-sonnet,gemini-2.0-flash
+
+<span class="c"># Multiple prompts, with judge scoring</span>
+$ llm-bench run \
+    --prompt <span class="s">"Summarize in 2 sentences: ..."</span> \
+    --prompt <span class="s">"Classify: positive, negative, neutral: ..."</span> \
+    --models gpt-4o-mini,claude-3-5-haiku \
+    --judge gpt-4o-mini \
+    --runs 5
+
+<span class="c"># JSON output for CI/CD</span>
+$ llm-bench run --config benchmark.yaml --json > results.json
+
+<span class="c"># List all supported models</span>
+$ llm-bench list-models</pre>
+        </div>
+        <div id="tab-yaml" class="tab-panel">
+<pre><span class="c"># benchmark.yaml</span>
+models:
+  - gpt-4o
+  - claude-3-5-sonnet
+  - gemini-2.0-flash
+  - llama-3.3-70b-versatile  <span class="c"># Groq</span>
+
+prompts:
+  - text: <span class="s">"Classify sentiment: 'Shipping was late but product is great'"</span>
+    name: sentiment_mixed
+
+  - text: <span class="s">"Write a Python function to flatten a nested list"</span>
+    name: code_gen
+
+judge_model: gpt-4o-mini
+n_runs: 5
+temperature: 0.0
+output: results.json</pre>
+        </div>
+        <div id="tab-python" class="tab-panel">
+<pre><span class="k">import</span> asyncio
+<span class="k">from</span> llm_bench.benchmark <span class="k">import</span> BenchmarkConfig, run_benchmark
+<span class="k">from</span> llm_bench.reporter <span class="k">import</span> print_results_table
+
+<span class="n">config</span> = BenchmarkConfig(
+    models=[<span class="s">"gpt-4o"</span>, <span class="s">"claude-3-5-sonnet"</span>, <span class="s">"gemini-2.0-flash"</span>],
+    prompts=[<span class="s">"What are the key differences between TCP and UDP?"</span>],
+    n_runs=<span class="n">3</span>,
+    judge_model=<span class="s">"gpt-4o-mini"</span>,
+)
+
+<span class="n">result</span> = asyncio.run(run_benchmark(<span class="n">config</span>))
+print_results_table(<span class="n">result</span>)
+
+<span class="c"># Access metrics programmatically</span>
+<span class="k">for</span> model, metrics <span class="k">in</span> result.metrics.items():
+    <span class="k">print</span>(f<span class="s">"{model}: p50={metrics.latency_p50_ms:.0f}ms"</span>)</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JSON OUTPUT -->
+  <section class="fade-in">
+    <div class="container">
+      <p class="section-label">CI/CD integration</p>
+      <h2>Machine-readable output</h2>
+      <p style="color:var(--dim);font-size:14px;margin-bottom:4px;">Use <code style="font-family:var(--mono);font-size:13px;color:#888">--json</code> flag to get structured output. Catch latency regressions, cost overruns, or quality drops in your pipeline.</p>
+      <div class="json-demo">
+<span class="jd">{</span>
+  <span class="jk">"timestamp"</span>: <span class="js">"2026-03-27T03:00:00Z"</span>,
+  <span class="jk">"duration_seconds"</span>: <span class="jn">8.3</span>,
+  <span class="jk">"results"</span>: <span class="jd">{</span>
+    <span class="jk">"gpt-4o"</span>: <span class="jd">{</span>
+      <span class="jk">"latency"</span>: <span class="jd">{</span> <span class="jk">"p50_ms"</span>: <span class="jn">498.2</span>, <span class="jk">"p95_ms"</span>: <span class="jn">631.4</span> <span class="jd">}</span>,
+      <span class="jk">"tokens"</span>: <span class="jd">{</span> <span class="jk">"avg_input"</span>: <span class="jn">14.0</span>, <span class="jk">"avg_output"</span>: <span class="jn">19.3</span> <span class="jd">}</span>,
+      <span class="jk">"cost_per_1k_requests_usd"</span>: <span class="jn">0.0581</span>,
+      <span class="jk">"quality_score"</span>: <span class="jn">8.7</span>,
+      <span class="jk">"n_success"</span>: <span class="jn">3</span>, <span class="jk">"n_errors"</span>: <span class="jn">0</span>
+    <span class="jd">}</span>
+  <span class="jd">}</span>
+<span class="jd">}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="fade-in">
+    <div class="container">
+      <p class="section-label">Get started</p>
+      <h2>Install in seconds</h2>
+      <div class="install-grid">
+        <div class="install-card">
+          <div class="label">Core only</div>
+          <code>pip install llm-bench</code>
+        </div>
+        <div class="install-card">
+          <div class="label">With OpenAI + Anthropic</div>
+          <code>pip install "llm-bench[openai,anthropic]"</code>
+        </div>
+        <div class="install-card">
+          <div class="label">All providers</div>
+          <code>pip install "llm-bench[all]"</code>
+        </div>
+        <div class="install-card">
+          <div class="label">Generate starter config</div>
+          <code>llm-bench init</code>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+        <div style="font-size:11px;font-family:var(--mono);color:var(--dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em">Requirements</div>
+        <div style="font-family:var(--mono);font-size:13px;color:#888;">Python ≥ 3.10 &nbsp;·&nbsp; MIT license &nbsp;·&nbsp; <a href="https://github.com/midnightrunai/llm-bench" style="color:#888;text-decoration:none;border-bottom:1px solid #333;">source on GitHub</a></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-left">
+      built by <a href="https://midnightrun.ai" target="_blank">midnightrun.ai</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/midnightrunai/llm-bench/blob/main/LICENSE" target="_blank" rel="noopener">MIT</a>
+    </div>
+    <ul class="footer-links">
+      <li><a href="https://github.com/midnightrunai/llm-bench" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/llm-bench/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="https://github.com/midnightrunai/llm-bench/issues" target="_blank" rel="noopener">Issues</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  function copyInstall(btn) {
+    const cmd = document.getElementById('install-cmd').textContent;
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function switchTab(btn, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+
+  // Scroll fade-in
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+    { threshold: 0.08 }
+  );
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
