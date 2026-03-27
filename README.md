@@ -1,5 +1,10 @@
 # llm-bench
 
+[![PyPI version](https://badge.fury.io/py/llm-benchmarker.svg)](https://pypi.org/project/llm-benchmarker/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/midnightrunai/llm-bench/actions/workflows/test.yml/badge.svg)](https://github.com/midnightrunai/llm-bench/actions/workflows/test.yml)
+
 **Benchmark any LLM against your actual prompts.** Compare OpenAI, Anthropic, Gemini, Mistral, Groq — latency, cost, quality, side by side.
 
 ```
